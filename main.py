@@ -15,8 +15,8 @@ def get_arguments():
 
 
 def get_gateway_ip():
-    gateway_ip = re.findall(r"\d+.\d+.\d+.\d+", subprocess.check_output(["route", "-n"]).decode())
-    return gateway_ip[1]
+    ip = re.findall(r"\d+.\d+.\d+.\d+", subprocess.check_output(["route", "-n"]).decode())[1]
+    return ip
 
 
 def get_mac(ip):
@@ -41,13 +41,13 @@ options = get_arguments()
 device_ip = options.device_ip
 device_mac = get_mac(device_ip)
 if device_mac:
-    print("[+] Got device mac")
+    print(f"[+] Got device mac: {device_mac}")
 gateway_ip = get_gateway_ip()
 if gateway_ip:
-    print(f"[+] Gateway IP found: {gateway_ip}")
+    print(f"[+] Got gateway ip: {gateway_ip}")
 gateway_mac = get_mac(gateway_ip)
 if gateway_mac:
-    print("[+] Got Gateway mac")
+    print(f"[+] Got gateway mac: {gateway_mac}")
 
 try:
     sent_packets_count = 0
