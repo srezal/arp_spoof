@@ -63,7 +63,3 @@ except KeyboardInterrupt:
     print("\n[+] Detected CTRL + C.......Resetting ARP tables.")
     restore(device_ip, gateway_ip, device_mac, gateway_mac)
     restore(gateway_ip, device_ip, gateway_mac, device_mac)
-
-
-# IP FORWARDING
-# echo 1 > /proc/sys/net/ipv4/ip_forward
