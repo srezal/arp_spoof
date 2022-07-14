@@ -7,7 +7,7 @@ import optparse
 
 def get_arguments():
     parser = optparse.OptionParser()
-    parser.add_option("-d", "--device", dest="device_ip", help="Target IP")
+    parser.add_option("-d", "--device", dest="device_ip", help="Device IP")
     (options, arguments) = parser.parse_args()
     if not options.device_ip:
         parser.error("[-] Specify an Device IP, use --help for more info")
